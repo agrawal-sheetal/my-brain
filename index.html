@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Brain</title>
+  <style>
+  
+html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Georgia', serif;
+      background-color: #d8d8d8; 
+    }
+
+#introOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #d8d8d8;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  transition: opacity 2s ease;
+}
+
+#brainContainer {
+  position: relative;
+  width: 50vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0vh;
+}
+
+#brain1,
+#brain2 {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  transition: all 3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+#brain1 {
+  z-index: 5;
+  cursor: pointer;
+  max-height: 50vh; 
+  transition: transform 1s ease-out;
+  margin-top: 20vh;
+}
+
+#brain2 {
+  z-index: 2;
+  align-self: flex-end;
+  max-height: 40vh; 
+  top: -10vh;
+  margin-bottom: 2vh;
+}
+
+#startPrompt {
+      position: fixed;
+      bottom: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #333;
+      font-size: 24px;
+      z-index: 101;
+      text-align: center;
+      animation: pulse 2s infinite;
+      text-shadow: 0 0 10px rgba(255,255,255,0.7);
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.7; transform: translateX(-50%) scale(0.98); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.02); }
+      100% { opacity: 0.7; transform: translateX(-50%) scale(0.98); }
+    }
+
+    /* Canvas container for emotion words */
+    #canvasContainer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 2s ease;
+      z-index: 1;
+      background-color: #f9f9f9;
+    }
+
+    /* Enhanced poem modal */
+    #poemModal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: 33%;
+      max-height: 60%;
+      padding: 25px;
+      display: none;
+      overflow-y: auto;
+      z-index: 10;
+      background-image: url('https://img.freepik.com/free-photo/design-space-paper-textured-background_53876-147801.jpg?t=st=1746926700~exp=1746930300~hmac=946707588b13eb6f21e4d166462be44c02cec9e29fe1eff10c3db2289b8de9f0&w=2000');
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 
+                  0 40px 100px rgba(0, 0, 0, 0.6),
+                  0 10px 25px rgba(0, 0, 0, 0.8),
+                  inset 0 0 30px rgba(255, 255, 255, 0.8);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      opacity: 0;
+      clip-path: polygon(
+        3% 0%, 97% 3%, 100% 30%, 94% 65%, 98% 98%, 
+        75% 100%, 40% 98%, 10% 95%, 0% 70%, 5% 35%
+      );
+    }
+
+    #poemModal.show {
+      display: block;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    #closeModal {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #333;
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      line-height: 30px;
+      transition: transform 0.2s ease, background 0.3s ease;
+    }
+
+    #closeModal:hover {
+      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    #emotionTitle {
+      font-size: 24px;
+      margin-bottom: 10px;
+      text-align: center;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    }
+
+    #poemContent {
+      white-space: pre-line;
+      font-size: 16px;
+      line-height: 1.5;
+      text-align: center;
+      margin: 0 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Intro Overlay -->
+  <div id="introOverlay">
+    <div id="brainContainer">
+      <img id="brain1" src="brain1.png" alt="Brain Front Layer" />
+      <img id="brain2" src="brain2.png" alt="Brain Back Layer" />
+    </div>
+    <div id="startPrompt"></div>
+  </div>
+
+  <!-- Canvas Container for Emotion Words -->
+  <div id="canvasContainer"></div>
+
+  <!-- Modal -->
+  <div id="poemModal">
+    <div id="closeModal">✕</div>
+    <h2 id="emotionTitle"></h2>
+    <p id="poemContent"></p>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <script>
+    const emotions = [
+      "joy", "grief", "longing", "rage", "hope", "melancholy", "serenity", "envy", "awe", "euphoria", "dread",
+      "love", "isolation", "compassion", "fear", "wonder", "confusion", "peace", "nostalgia", "yearning", 
+      "trust", "shame", "guilt", "relief", "delight", "surprise", "pride", "remorse", "calm", "tension",
+      "anxiety", "excitement", "bliss", "contentment", "loneliness", "boredom", "frustration", "gratitude",
+      "hopefulness", "sorrow", "misery", "betrayal", "affection", "curiosity", "vindication", "ecstasy",
+      "revulsion", "jealousy", "admiration", "conflicted", "distrust", "humility", "resentment", "anticipation",
+      "desire", "infatuation", "disappointment", "shyness", "bravery", "timidity", "alienation", "sympathy",
+      "disdain", "glee", "loyalty", "insecurity", "freedom", "paranoia", "confidence", "hate", "ache", "triumph",
+      "elation", "agitation", "mortification", "amazement", "disbelief", "bewilderment", "despair", "tranquility",
+      "hesitation", "revenge", "passion", "tenderness", "apathy", "ambivalence", "eagerness", "stubbornness",
+      "love-struck", "serendipity", "motivation", "homesickness", "craving", "overwhelm", "catharsis"
+    ];
+
+    const poems = {
+      joy: `"I dwell in Possibility" — Emily Dickinson\n\nI dwell in Possibility—\nA fairer House than Prose—\nMore numerous of Windows—\nSuperior—for Doors—`,
+      grief: `"Funeral Blues" — W. H. Auden\n\nStop all the clocks, cut off the telephone,\nPrevent the dog from barking with a juicy bone...`,
+      longing: `"Tonight I Can Write" — Pablo Neruda\n\nTonight I can write the saddest lines.\nI loved her, and sometimes she loved me too.`,
+      rage: `"Do not go gentle into that good night" — Dylan Thomas\n\nDo not go gentle into that good night,\nOld age should burn and rave at close of day.`,
+      hope: `"Hope is the thing with feathers" — Emily Dickinson\n\nHope is the thing with feathers\nThat perches in the soul—`,
+      melancholy: `"To Autumn" — John Keats\n\nSeason of mists and mellow fruitfulness,\nClose bosom-friend of the maturing sun;`,
+      serenity: `"The Peace of Wild Things" — Wendell Berry\n\nWhen despair for the world grows in me\nand I wake in the night at the least sound...`,
+      awe: `"When I Heard the Learn'd Astronomer" — Walt Whitman\n\nTill rising and gliding out I wander'd off by myself,\nIn the mystical moist night-air...`,
+      nostalgia: `"Piano" — D. H. Lawrence\n\nSoftly, in the dusk, a woman is singing to me;\nTaking me back down the vista of years...`,
+      fear: `"A Dream Within a Dream" — Edgar Allan Poe\n\nAll that we see or seem\nIs but a dream within a dream.`
+    };
+
+    let emotionWords = [];
+    let fontSize = 22;
+    let noiseOffset = 0;
+    let canvasInstance = null;
+    let emotionsInitialized = false;
+    
+  document.addEventListener("DOMContentLoaded", () => {
+  const introOverlay = document.getElementById("introOverlay");
+  const brain1 = document.getElementById("brain1");
+  const canvasContainer = document.getElementById("canvasContainer");
+  const startPrompt = document.getElementById("startPrompt");
+  let zoomLevel = 1;
+  const maxZoom = 10;
+  let hasZoomTriggered = false;
+
+window.addEventListener("wheel", (e) => {
+  if (introOverlay.style.display === "none" || hasZoomTriggered) return;
+  e.preventDefault();
+  zoomLevel += e.deltaY * -0.002;
+  zoomLevel = Math.min(Math.max(1, zoomLevel), maxZoom);
+  brain1.style.transform = `scale(${zoomLevel})`;
+
+  if (zoomLevel >= 2.95 && !hasZoomTriggered) {
+    hasZoomTriggered = true;
+    transitionToCluster();
+  }
+}, { passive: false });
+
+  introOverlay.addEventListener("click", () => {
+    zoomLevel = maxZoom;
+    brain1.style.transform = `scale(${zoomLevel})`;
+    startPrompt.style.opacity = "0";
+    setTimeout(() => {
+      introOverlay.style.opacity = "0";
+      setTimeout(() => {
+        introOverlay.style.display = "none";
+        canvasContainer.style.opacity = "1";
+        // Again, no initEmotions() unless it’s not called elsewhere
+      }, 2000);
+    }, 200);
+          // Show the canvas with emotions
+          setTimeout(() => {
+            canvasContainer.style.opacity = "1";
+            introOverlay.style.display = "none";
+            
+            if (!emotionsInitialized) {
+              initEmotions();
+            }
+          }, 2000);
+        }, 2000);
+      });
+
+    function initEmotions() {
+      canvasInstance = new p5(function(p) {
+        p.setup = function() {
+          let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+          canvas.parent('canvasContainer');
+          p.textFont("Georgia");
+          p.textAlign(p.CENTER, p.CENTER);
+          p.noStroke();
+
+          // Create more words to fill the space
+          for (let i = 0; i < emotions.length * 3; i++) {
+            const emotion = emotions[i % emotions.length];
+            emotionWords.push({
+              word: emotion,
+              xOff: p.random(1000),
+              yOff: p.random(1000),
+              z: p.random(0.5, 1.5),
+              animOffset: p.random(p.TWO_PI),
+              scribbleSpeed: p.random(0.02, 0.06),
+              animPhase: p.random(p.TWO_PI),
+              baseX: p.random(p.width),
+              baseY: p.random(p.height)
+            });
+          }
+          
+          emotionsInitialized = true;
+        };
+
+        p.draw = function() {
+          p.clear();
+
+          for (let i = 0; i < emotionWords.length; i++) {
+            let e = emotionWords[i];
+            
+            // Calculate position with noise-based movement around base position
+            let x = e.baseX + p.map(p.noise(e.xOff + noiseOffset), 0, 1, -200, 200);
+            let y = e.baseY + p.map(p.noise(e.yOff + noiseOffset), 0, 1, -200, 200);
+            
+            // Keep words within canvas bounds
+            x = p.constrain(x, 0, p.width);
+            y = p.constrain(y, 0, p.height);
+            
+            let scale = e.z;
+            let opacity = p.map(e.z, 0.5, 1.5, 100, 255);
+            
+            p.textSize(fontSize * scale);
+            let wordWidth = p.textWidth(e.word);
+            let wordHeight = fontSize * scale;
+            
+            // Draw animated oval border
+            p.noFill();
+            p.stroke(30, opacity * 0.8);
+            p.strokeWeight(1.2);
+            
+            p.push();
+            p.translate(x, y);
+            
+            let scribbleTime = p.frameCount * e.scribbleSpeed + e.animPhase;
+            let numPoints = 36;
+            
+            p.beginShape();
+            for (let j = 0; j < numPoints; j++) {
+              let angle = (j / numPoints) * p.TWO_PI;
+              let ovalX = p.cos(angle) * (wordWidth/1.5 + 15); 
+              let ovalY = p.sin(angle) * (wordHeight/1.5 + 10);
+              let timeOffset = scribbleTime + angle * 2;
+              let scribbleX = p.map(p.noise(angle, timeOffset, 0), 0, 1, -4, 4);
+              let scribbleY = p.map(p.noise(angle, timeOffset, 1), 0, 1, -4, 4);
+              let pulseAmount = p.sin(p.frameCount * 0.03 + e.animOffset) * 2;
+              
+              p.vertex(
+                ovalX + scribbleX + pulseAmount * p.cos(angle), 
+                ovalY + scribbleY + pulseAmount * p.sin(angle)
+              );
+            }
+            p.endShape(p.CLOSE);
+            p.pop();
+            
+            // Draw the word
+            p.noStroke();
+            p.fill(30, opacity);
+            p.text(e.word, x, y);
+
+            e.screenX = x;
+            e.screenY = y;
+            e.size = fontSize * scale;
+            e.wordWidth = wordWidth;
+          }
+
+          noiseOffset += 0.003;
+        };
+
+        p.mousePressed = function() {
+          for (let i = 0; i < emotionWords.length; i++) {
+            let e = emotionWords[i];
+            let d = p.dist(p.mouseX, p.mouseY, e.screenX, e.screenY);
+            if (d < p.max(e.wordWidth/2 + 15, e.size)) {
+              showPoem(e.word);
+              break;
+            }
+          }
+        };
+
+        p.windowResized = function() {
+          p.resizeCanvas(p.windowWidth, p.windowHeight);
+        };
+      });
+    }
+
+    function showPoem(emotion) {
+      const modal = document.getElementById("poemModal");
+      document.getElementById("emotionTitle").innerText = emotion.toUpperCase();
+      document.getElementById("poemContent").innerText = poems[emotion] || "(Poem coming soon...)";
+      modal.style.display = "block";
+      
+      setTimeout(() => {
+        modal.classList.add("show");
+        modal.style.boxShadow = `
+          0 30px 80px rgba(0, 0, 0, 0.8), 
+          0 50px 150px rgba(0, 0, 0, 0.7),
+          0 10px 30px rgba(0, 0, 0, 0.9),
+          inset 0 0 35px rgba(255, 255, 255, 0.9)
+        `;
+      }, 10);
+    }
+
+    document.getElementById("closeModal").onclick = function(e) {
+      e.stopPropagation();
+      const modal = document.getElementById("poemModal");
+      modal.classList.remove("show");
+      
+      modal.style.boxShadow = `
+        0 25px 60px rgba(0, 0, 0, 0.7), 
+        0 40px 100px rgba(0, 0, 0, 0.6),
+        0 10px 25px rgba(0, 0, 0, 0.8),
+        inset 0 0 30px rgba(255, 255, 255, 0.8)
+      `;
+      
+      setTimeout(() => { 
+        modal.style.display = "none"; 
+      }, 500);
+    };
+  </script>
+</body>
+</html>
