@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Brain</title>
+  <style>
+   
+    @font-face {
+      font-family: 'VinFont'; /* Custom font for emotion bubbles */
+      src: url('Vin.otf') format('opentype');
+    }
+    
+    @font-face {
+      font-family: 'TypeFont'; /* Custom font for modal */
+      src: url('Type.ttf') format('truetype');
+    }
+    
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Georgia', serif; 
+      background-color: #f9f9f9; 
+    }
+
+    #canvasContainer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background-color: #f9f9f9;
+      overflow: hidden;
+      box-sizing: border-box; /* Ensure border is inside container */
+    }
+
+    /* Fixed blur effect */
+    #canvasContainer.modal-open {
+      filter: blur(5px);
+      pointer-events: none;
+    }
+
+    /* Enhanced poem modal */
+    #poemModal {
+      position: absolute;
+      font-family: 'TypeFont', serif;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      width: 33%;
+      max-height: 60%;
+      padding: 25px;
+      display: none;
+      overflow-y: auto;
+      z-index: 10;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      opacity: 0;
+      /* Initial crumpled state */
+      clip-path: polygon(
+        10% 10%, 20% 5%, 30% 15%, 40% 8%, 50% 20%,
+        60% 10%, 70% 15%, 80% 5%, 90% 10%, 100% 20%,
+        95% 30%, 90% 40%, 95% 50%, 90% 60%, 95% 70%,
+        90% 80%, 85% 90%, 70% 95%, 60% 90%, 50% 95%,
+        40% 90%, 30% 95%, 20% 90%, 10% 95%, 5% 80%,
+        10% 70%, 5% 60%, 10% 50%, 5% 40%, 10% 30%
+      );
+      transform-origin: center;
+    }
+
+    #poemModal.show {
+      display: block;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.05);
+      /* Uncrumpled state */
+      clip-path: polygon(
+        0% 0%, 100% 0%, 100% 100%, 0% 100%
+      );
+      transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                  clip-path 0.7s ease-out;
+    }
+
+    #poemModal.closing {
+      /* Crumpled closing state */
+      clip-path: polygon(
+        10% 10%, 20% 5%, 30% 15%, 40% 8%, 50% 20%,
+        60% 10%, 70% 15%, 80% 5%, 90% 10%, 100% 20%,
+        95% 30%, 90% 40%, 95% 50%, 90% 60%, 95% 70%,
+        90% 80%, 85% 90%, 70% 95%, 60% 90%, 50% 95%,
+        40% 90%, 30% 95%, 20% 90%, 10% 95%, 5% 80%,
+        10% 70%, 5% 60%, 10% 50%, 5% 40%, 10% 30%
+      );
+      transform: translate(-50%, -50%) scale(0.1) rotate(10deg);
+      opacity: 0;
+    }
+
+    #closeModal {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #333;
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      line-height: 30px;
+      transition: transform 0.2s ease, background 0.3s ease;
+      z-index: 11;
+      /* You can change this to your custom font */
+      font-family: 'YourCustomFont', 'Cormorant Garamond', serif;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+    }
+
+    #closeModal:hover {
+      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    #emotionTitle {
+      font-size: 24px;
+      margin-bottom: 10px;
+      text-align: center;
+      font-weight: 600;
+      opacity: 0.95; /* Reduced opacity */
+      color: rgba(0, 0, 0, 0.75); /* Alternative method with rgba */
+    }
+
+    #poemContent {
+      white-space: pre-line;
+      font-size: 16px;
+      line-height: 1.5;
+      text-align: center;
+      margin: 0 5px;
+      opacity: 0.95; /* Reduced opacity */
+      color: rgba(0, 0, 0, 0.75); /* Alternative method with rgba */
+    }
+
+    .emotion-word {
+      transition: all 0.5s ease;
+      position: absolute;
+    }
+
+    /* Back button styles */
+    #backButton {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 8px 15px;
+      font-family: 'VinFont', sans-serif;
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 100; /* Increased z-index to ensure it's on top */
+      border-radius: 5px;
+      border: 1.2px solid rgba(30, 30, 30, 0.8);
+      background-color: rgba(30, 30, 30, 0.8); /* Always filled */
+      color: white; /* Always white text */
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    #backButton:hover {
+      transform: scale(1.05); /* Slight grow effect on hover */
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Add shadow on hover */
+    }
+  </style>
+
+<svg id="filterDefs" style="position:absolute;width:0;height:0;">
+  <filter id="tornEdges">
+      <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="3" result="turbulence"/>
+      <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="20" xChannelSelector="R" yChannelSelector="B"/>
+  </filter>
+</svg>
+
+</head>
+<body>
+  <audio id="crumpleSound" src="crumpling.mp3" preload="auto"></audio>
+  
+  <!-- Back Button -->
+  <a id="backButton" href="./index.html">Back</a>
+  
+  <!-- Canvas Container for Emotion Words -->
+  <div id="canvasContainer"></div>
+
+  <!-- Modal -->
+  <div id="poemModal">
+    <!-- Frame element that gets the filter effect -->
+    <div id="modalFrame" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; filter: url(#tornEdges); background-image: url('https://img.freepik.com/free-photo/design-space-paper-textured-background_53876-147801.jpg?t=st=1746926700~exp=1746930300~hmac=946707588b13eb6f21e4d166462be44c02cec9e29fe1eff10c3db2289b8de9f0&w=2000'); background-size: cover; background-position: center;"></div>
+    
+    <!-- Content that remains clean and readable -->
+    <div id="modalContent" style="position: relative; z-index: 2; width: 100%; height: 100%;">
+      <div id="closeModal">✕</div>
+      <h2 id="emotionTitle"></h2>
+      <p id="poemContent"></p>
+    </div>
+  </div>
+
+  <!-- Sound Effects -->
+  <audio id="paperOpenSound" src="https://assets.mixkit.co/sfx/preview/mixkit-paper-whoosh-1485.mp3" preload="auto"></audio>
+  <audio id="paperCloseSound" src="https://assets.mixkit.co/sfx/preview/mixkit-quick-jump-arcade-game-239.mp3" preload="auto"></audio>
+  <!-- Add your crumpling sound here (replace with your file) -->
+  <audio id="crumpleSound" src="crumpling.mp3" preload="auto"></audio>
+  <audio id="closeSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arrow-whoosh-1491.mp3" preload="auto"></audio>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <script>
+    const emotions = [
+      "joy", "grief", "longing", "rage", "hope", "melancholy", "serenity", "envy", "awe", "euphoria", "dread",
+      "love", "isolation", "compassion", "fear", "wonder", "confusion", "peace", "nostalgia", "yearning", 
+      "trust", "shame", "guilt", "relief", "delight", "surprise", "pride", "remorse", "calm", "tension",
+      "anxiety", "excitement", "bliss", "contentment", "loneliness", "boredom", "frustration", "gratitude",
+      "hopefulness", "sorrow", "misery", "betrayal", "affection", "curiosity", "vindication", "ecstasy",
+      "revulsion", "jealousy", "admiration", "conflicted", "distrust", "humility", "resentment", "anticipation",
+      "desire", "infatuation", "disappointment", "shyness", "bravery", "timidity", "alienation", "sympathy",
+      "disdain", "glee", "loyalty", "insecurity", "freedom", "paranoia", "confidence", "hate", "ache", "triumph",
+      "elation", "agitation", "mortification", "amazement", "disbelief", "bewilderment", "despair", "tranquility",
+      "hesitation", "revenge", "passion", "tenderness", "apathy", "ambivalence", "eagerness", "stubbornness",
+      "love-struck", "serendipity", "motivation", "homesickness", "craving", "overwhelm", "catharsis"
+    ];
+
+    const poems = {
+      joy: `Sunlight dances on my skin, laughter bubbles from within.`,
+      grief: `A shadow clings where light once lay, tears etch paths of yesterday.`,
+      longing: `Eyes fixed on horizons far, heart tethered to a distant star.`,
+      rage: `Flames consume my quiet core, a tempest rising evermore.`,
+      hope: `In darkest night, a spark remains, whispering of brighter gains.`,
+      melancholy: `Soft sighs drift through twilight's haze, memories in muted grays.`,
+      serenity: `Still waters mirror sky's embrace, peace resides in this quiet place.`,
+      envy: `Green-eyed thoughts silently creep, coveting treasures others keep.`,
+      awe: `Mountains loom with silent might, humbling the soul's flight.`,
+      euphoria: `Hearts soar on wings of delight, basking in euphoric light.`,
+      dread: `Shadows stretch with looming grace, fear etched on every face.`,
+      love: `Two hearts entwined in silent song, a bond unbreakable and strong.`,
+      isolation: `Alone amidst the world's embrace, seeking solace in empty space.`,
+      compassion: `Hands extended, hearts align, bridging gaps with love divine.`,
+      fear: `Cold fingers trace my spine, whispering doubts that intertwine.`,
+      wonder: `Eyes wide with childlike glee, marveling at life's mystery.`,
+      confusion: `Paths diverge in tangled skein, clarity lost in mental rain.`,
+      peace: `Gentle breezes lull the mind, in nature's arms, calm we find.`,
+      nostalgia: `Old songs play on memory's strings, reviving long-forgotten things.`,
+      yearning: `Desires burn with silent plea, reaching for what cannot be.`,
+      trust: `Leaps taken with eyes closed tight, faith guiding through the night.`,
+      shame: `Eyes cast down, cheeks aflame, burdened by unspoken blame.`,
+      guilt: `Echoes of missteps resound, in conscience's relentless pound.`,
+      relief: `Weights lifted from weary shoulders, burdens fading as dawn smolders.`,
+      delight: `Joyful trills in morning's light, hearts dancing in pure delight.`,
+      surprise: `Unexpected turns unfold, stories new and yet untold.`,
+      pride: `Chests swell with earned acclaim, basking in achievement's flame.`,
+      remorse: `Regret's cold hand grips tight, haunting dreams in dead of night.`,
+      calm: `Stillness wraps the world in grace, a gentle, soothing embrace.`,
+      tension: `Strings pulled taut with silent strain, awaiting release from pain.`,
+      anxiety: `Thoughts spiral in endless chase, seeking peace in frantic pace.`,
+      excitement: `Electric pulses surge and race, anticipation's warm embrace.`,
+      bliss: `Moments wrapped in golden hue, where joy feels ever new.`,
+      contentment: `Hearts at ease, desires stilled, life's simple pleasures fulfilled.`,
+      loneliness: `Echoes in empty halls resound, where companionship isn't found.`,
+      boredom: `Time drips slow in endless stream, trapped within a stagnant dream.`,
+      frustration: `Walls rise where paths once lay, progress halted in dismay.`,
+      gratitude: `Thankful whispers fill the air, acknowledging love and care.`,
+      hopefulness: `Eyes alight with future's gleam, chasing down each cherished dream.`,
+      sorrow: `Tears fall like autumn rain, washing away silent pain.`,
+      misery: `Dark clouds loom without reprieve, joy and light forced to leave.`,
+      betrayal: `Knives hidden in friendly smiles, trust eroded over miles.`,
+      affection: `Gentle touches, tender gaze, love expressed in countless ways.`,
+      curiosity: `Minds ignite with questions deep, seeking truths they long to keep.`,
+      vindication: `Justice served on rightful plate, wrongs corrected by fate.`,
+      ecstasy: `Pleasure peaks in vibrant hues, senses overwhelmed and fused.`,
+      revulsion: `Stomach churns, senses recoil, faced with acts that deeply soil.`,
+      jealousy: `Green flames flicker in the heart, tearing trust and love apart.`,
+      admiration: `Eyes shine with deep respect, honoring virtues we detect.`,
+      conflicted: `Hearts tugged in dual directions, torn by opposing affections.`,
+      distrust: `Walls erected, guards held high, wary of the next goodbye.`,
+      humility: `Achievements held with modest grace, ego kept in rightful place.`,
+      resentment: `Bitterness brews beneath the skin, grudges nurtured deep within.`,
+      anticipation: `Moments stretch in eager wait, poised before impending fate.`,
+      desire: `Flames ignite with longing's kiss, yearning for forbidden bliss.`,
+      infatuation: `Thoughts consumed by one alone, heartbeats not entirely our own.`,
+      disappointment: `Hopes deflate like punctured dreams, reality not as it seems.`,
+      shyness: `Words retreat behind closed lips, courage lost in nervous slips.`,
+      bravery: `Steps taken despite the fear, forging paths both bold and clear.`,
+      timidity: `Hesitant glances, voices low, unsure of which way to go.`,
+      alienation: `Surrounded yet profoundly apart, disconnected in mind and heart.`,
+      sympathy: `Hearts reach out to share the pain, offering comfort once again.`,
+      disdain: `Noses turned with scornful air, judgments cast without a care.`,
+      glee: `Laughter bursts in joyful sound, happiness freely unbound.`,
+      loyalty: `Steadfast through each trial and test, standing firm at love's behest.`,
+      insecurity: `Doubts whisper in the mind, confidence hard to find.`,
+      freedom: `Chains broken, spirits soar, unbound to explore once more.`,
+      paranoia: `Shadows whisper secrets untrue, trust eroded by imagined view.`,
+      confidence: `Steps taken with assured grace, challenges met face to face.`,
+      hate: `Fury burns with searing flame, consuming all in its name.`,
+      ache: `Longing lingers in the chest, desires unmet, unrest.`,
+      triumph: `Victory's song loudly sung, battles fought and won.`,
+      elation: `Spirits lifted to the skies, joy reflected in bright eyes.`,
+      agitation: `Restless energy takes hold, peace elusive, uncontrolled.`,
+      mortification: `Embarrassment's crimson stain, wishing to escape the pain.`,
+      amazement: `Eyes widen in sheer surprise, marveling at wonders that arise.`,
+      disbelief: `Truths defy what we perceive, challenging what we believe.`,
+      bewilderment: `Lost in thoughts that twist and turn, clarity we deeply yearn.`,
+      despair: `Hope extinguished, darkness near, engulfed by overwhelming fear.`,
+      tranquility: `Calm waters and gentle breeze, moments where the soul finds ease.`,
+      hesitation: `Steps falter at the brink, unsure of what to think.`,
+      revenge: `Plans plotted in silent night, seeking to set wrongs right.`,
+      passion: `Fires burn with intense heat, where love and desire meet.`,
+      tenderness: `Soft touches and gentle care, affection beyond compare.`,
+      apathy: `Emotions dulled, interest waned, connections lost, unchained.`,
+      ambivalence: `Hearts torn in dual desire, caught between the fire.`,
+      eagerness: `Leaning forward, eyes alight, ready to embrace the fight.`,
+      stubbornness: `Roots planted firm and deep, convictions held and keep.`,
+      "love-struck": `Hearts flutter with each glance, lost within a sweet romance.`,
+      serendipity: `Chance encounters, fate's design, moments where stars align.`,
+      motivation: `Drive ignited from within, pushing past where we've been.`,
+      homesickness: `Yearning for familiar sights, comfort found in past delights.`,
+      craving: `Desires gnaw with urgent need, insatiable hunger to feed.`,
+      overwhelm: `Tasks pile high without reprieve, drowning in what we perceive.`,
+      catharsis: `Tears cleanse the soul's deep ache, releasing all that we forsake.`
+    };
+
+    let emotionWords = [];
+    let fontSize = 22;
+    let noiseOffset = 0;
+    let canvasInstance = null;
+    let emotionsInitialized = false;
+    let zoomLevel = 1;
+    const maxZoom = 10;
+    const minZoom = 0.5;
+    let isModalOpen = false;
+    let paperOpenSound, paperCloseSound, crumpleSound, closeSound;
+    
+    document.addEventListener("DOMContentLoaded", () => {
+      const canvasContainer = document.getElementById("canvasContainer");
+      paperOpenSound = document.getElementById("paperOpenSound");
+      paperCloseSound = document.getElementById("paperCloseSound");
+      crumpleSound = document.getElementById("crumpleSound");
+      closeSound = document.getElementById("closeSound");
+      
+      // No event listener needed for back button - now using HTML anchor tag
+      
+      // Initialize emotions immediately
+      initEmotions();
+    });
+
+    function initEmotions() {
+      canvasInstance = new p5(function(p) {
+        p.setup = function() {
+          let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+          canvas.parent('canvasContainer');
+          p.textFont('VinFont');  // Use the Vin.otf font for emotion bubbles
+          p.textAlign(p.CENTER, p.CENTER);
+          p.noStroke();
+
+          // Create more words to fill the space
+          for (let i = 0; i < emotions.length * 3; i++) {
+            const emotion = emotions[i % emotions.length];
+            emotionWords.push({
+              word: emotion,
+              xOff: p.random(1000),
+              yOff: p.random(1000),
+              z: p.random(0.5, 1.5),
+              animOffset: p.random(p.TWO_PI),
+              scribbleSpeed: p.random(0.02, 0.06),
+              animPhase: p.random(p.TWO_PI),
+              baseX: p.random(p.width),
+              baseY: p.random(p.height),
+              visible: true
+            });
+          }
+          
+          emotionsInitialized = true;
+        };
+
+        p.draw = function() {
+          // Important: Don't clear the screen when modal is open
+          if (!isModalOpen) {
+            p.clear();
+            p.background(249, 249, 249);
+          }
+
+          // First pass: calculate positions and check for hover
+          let hoveredIndex = -1;
+          let closestDist = Infinity;
+          
+          for (let i = 0; i < emotionWords.length; i++) {
+            let e = emotionWords[i];
+            if (!e.visible) continue;
+            
+            // Calculate position with noise-based movement around base position
+            let x = e.baseX + p.map(p.noise(e.xOff + noiseOffset), 0, 1, -200, 200);
+            let y = e.baseY + p.map(p.noise(e.yOff + noiseOffset), 0, 1, -200, 200);
+            
+            // Keep words within canvas bounds
+            x = p.constrain(x, 0, p.width);
+            y = p.constrain(y, 0, p.height);
+            
+            // Store calculated position
+            e.screenX = x;
+            e.screenY = y;
+            
+            // Calculate size info
+            let scale = e.z;
+            e.size = fontSize * scale;
+            p.textSize(e.size);
+            e.wordWidth = p.textWidth(e.word);
+            
+            // Check for closest hover - but ignore the area around the back button
+            let d = p.dist(p.mouseX, p.mouseY, x, y);
+            let hitRadius = Math.max(e.wordWidth/1.5 + 15, e.size);
+            
+            // Add check to not trigger hover if near the back button (top-left 100x60 px area)
+            let isNearBackButton = p.mouseX < 100 && p.mouseY < 60;
+            
+            if (d < hitRadius && d < closestDist && !isNearBackButton) {
+              closestDist = d;
+              hoveredIndex = i;
+            }
+          }
+          
+          // Second pass: draw with hover effect only on closest
+          for (let i = 0; i < emotionWords.length; i++) {
+            let e = emotionWords[i];
+            if (!e.visible) continue;
+            
+            let x = e.screenX;
+            let y = e.screenY;
+            let scale = e.z;
+            let opacity = p.map(scale, 0.5, 1.5, 100, 255);
+            let isHovering = (i === hoveredIndex);
+            
+            e.isHovering = isHovering; // Store for click handler
+            
+            // Draw animated oval border
+            if (isHovering) {
+              p.fill(30, opacity * 0.8); // Fill with black when hovering
+            } else {
+              p.noFill();
+            }
+            p.stroke(30, opacity * 0.8);
+            p.strokeWeight(1.2);
+            
+            p.push();
+            p.translate(x, y);
+            
+            let scribbleTime = p.frameCount * e.scribbleSpeed + e.animPhase;
+            let numPoints = 36;
+            
+            p.beginShape();
+            for (let j = 0; j < numPoints; j++) {
+              let angle = (j / numPoints) * p.TWO_PI;
+              let ovalX = p.cos(angle) * (e.wordWidth/1.5 + 15); 
+              let ovalY = p.sin(angle) * (e.size/1.5 + 10);
+              let timeOffset = scribbleTime + angle * 2;
+              let scribbleX = p.map(p.noise(angle, timeOffset, 0), 0, 1, -4, 4);
+              let scribbleY = p.map(p.noise(angle, timeOffset, 1), 0, 1, -4, 4);
+              let pulseAmount = p.sin(p.frameCount * 0.03 + e.animOffset) * 2;
+              
+              p.vertex(
+                ovalX + scribbleX + pulseAmount * p.cos(angle), 
+                ovalY + scribbleY + pulseAmount * p.sin(angle)
+              );
+            }
+            p.endShape(p.CLOSE);
+            p.pop();
+            
+            // Draw the word
+            p.noStroke();
+            if (isHovering) {
+              p.fill(255, opacity); // White text when hovering
+            } else {
+              p.fill(30, opacity); // Black text normally
+            }
+            p.textSize(e.size);
+            p.text(e.word, x, y);
+          }
+
+          noiseOffset += 0.003;
+        };
+
+        p.mousePressed = function() {
+          if (isModalOpen) return;
+          
+          // Check if click is near the back button area, if so, ignore
+          let isNearBackButton = p.mouseX < 100 && p.mouseY < 60;
+          if (isNearBackButton) return;
+          
+          for (let i = 0; i < emotionWords.length; i++) {
+            let e = emotionWords[i];
+            if (!e.visible) continue;
+            
+            if (e.isHovering) {
+              showPoem(e.word);
+              break;
+            }
+          }
+        };
+
+        p.windowResized = function() {
+          p.resizeCanvas(p.windowWidth, p.windowHeight);
+        };
+      });
+    }
+
+    function hideEmotions() {
+      document.getElementById('canvasContainer').classList.add('modal-open');
+      isModalOpen = true;
+    }
+
+    function showEmotions() {
+      document.getElementById('canvasContainer').classList.remove('modal-open');
+      isModalOpen = false;
+    }
+
+    function showPoem(emotion) {
+      hideEmotions();
+      
+      const modal = document.getElementById("poemModal");
+      
+      // Convert to Title Case instead of uppercase
+      const titleCaseEmotion = emotion.charAt(0).toUpperCase() + emotion.slice(1).toLowerCase();
+      document.getElementById("emotionTitle").innerText = titleCaseEmotion;
+      
+      document.getElementById("poemContent").innerText = poems[emotion] || "(Poem coming soon...)";
+      modal.style.display = "block";
+      
+      // Play paper opening sound
+      paperOpenSound.currentTime = 0;
+      paperOpenSound.play();
+      
+      // Play crumpling sound
+      if (crumpleSound.src && crumpleSound.src !== '') {
+        crumpleSound.currentTime = 0;
+        crumpleSound.play().catch(e => {
+          console.log("Error playing sound:", e);
+        });
+      }
+      
+      setTimeout(() => {
+        modal.classList.add("show");
+      }, 10);
+    }
+
+    document.getElementById("closeModal").onclick = function(e) {
+      e.stopPropagation();
+      const modal = document.getElementById("poemModal");
+      
+      // Play closing sounds
+      closeSound.currentTime = 0;
+      closeSound.play();
+      paperCloseSound.currentTime = 0;
+      paperCloseSound.play();
+      
+      // Start crumpling animation
+      modal.classList.remove("show");
+      modal.classList.add("closing");
+      
+      setTimeout(() => { 
+        modal.style.display = "none"; 
+        modal.classList.remove("closing");
+        showEmotions();
+      }, 700);
+    };
+  </script>
+</body>
+</html>

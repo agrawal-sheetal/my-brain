@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ripples</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: black;
+      height: 100vh;
+      cursor: default;
+      font-family: monospace;
+    }
+
+    #grainCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #ripples-container {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .ripple-container {
+      position: absolute;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: transparent;
+      border: 2px solid #a0acb8;
+      opacity: 0;
+      animation: ripple 2.5s ease-out forwards;
+      filter: url(#wavy);
+    }
+
+    .splash {
+      border-color: white !important;
+      border-width: 5px !important;
+      animation: splash 0.8s ease-out forwards;
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+    }
+
+    @keyframes ripple {
+      0% {
+        width: 0;
+        height: 0;
+        opacity: 0.6;
+      }
+      100% {
+        width: 300px;
+        height: 300px;
+        opacity: 0;
+      }
+    }
+
+    @keyframes splash {
+      0% {
+        width: 0;
+        height: 0;
+        opacity: 1;
+        transform: scale(1);
+      }
+      100% {
+        width: 400px;
+        height: 400px;
+        opacity: 0;
+        transform: scale(1.8);
+      }
+    }
+    
+    /* Back button styles */
+    #backButton {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 8px 15px;
+      font-family: monospace;
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 100; /* Increased z-index to ensure it's on top */
+      border-radius: 5px;
+      border: 1.2px solid rgba(30, 30, 30, 0.8);
+      background-color: rgba(30, 30, 30, 0.8); /* Always filled */
+      color: white; /* Always white text */
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    #backButton:hover {
+      transform: scale(1.05); /* Slight grow effect on hover */
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Add shadow on hover */
+    }
+    
+    #instructions {
+      position: fixed;
+      bottom: 20px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      color: rgba(255,255,255,0.6);
+      font-family: monospace;
+      font-size: 14px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG Ripple Filter -->
+  <svg width="0" height="0">
+    <filter id="wavy" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03 0.06" numOctaves="3" result="noise" seed="0"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="20" />
+    </filter>
+  </svg>
+
+  <!-- Canvas Grain -->
+  <canvas id="grainCanvas"></canvas>
+  <div id="ripples-container"></div>
+  
+  <!-- Back Button -->
+  <a id="backButton" href="./abc.html">Back</a>
+  
+  <!-- Audio -->
+  <audio id="splashSound" src="splash.mp3" preload="auto"></audio>
+
+  <script>
+    // Create audio context for better audio handling
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioContext = new AudioContext();
+    const splashSound = document.getElementById('splashSound');
+    
+    // Function to play the splash sound
+    function playSplashSound() {
+      // Reset the audio to the beginning
+      splashSound.currentTime = 0;
+      
+      // Play the audio
+      splashSound.play().catch(error => {
+        console.warn("Audio playback failed:", error);
+      });
+    }
+
+    const canvas = document.getElementById('grainCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    function drawGrain() {
+      const imageData = ctx.createImageData(canvas.width, canvas.height);
+      const buffer = imageData.data;
+      for (let i = 0; i < buffer.length; i += 4) {
+        const noise = Math.random() * 255;
+        buffer[i] = buffer[i + 1] = buffer[i + 2] = noise;
+        buffer[i + 3] = 25;
+      }
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    function animateGrain() {
+      drawGrain();
+      requestAnimationFrame(animateGrain);
+    }
+    animateGrain();
+
+    const ripplesContainer = document.getElementById('ripples-container');
+
+    let lastX = -1;
+    let lastY = -1;
+    let stillSince = null;
+    let hasSplashed = false;
+
+    function createRipple(x, y, isSplash = false) {
+      const rippleContainer = document.createElement('div');
+      rippleContainer.className = 'ripple-container';
+      rippleContainer.style.left = `${x}px`;
+      rippleContainer.style.top = `${y}px`;
+
+      const ripple = document.createElement('div');
+      ripple.className = 'ripple';
+      if (isSplash) ripple.classList.add('splash');
+
+      ripple.style.transform = `rotate(${Math.random() * 30 - 15}deg) scale(${0.9 + Math.random() * 0.2})`;
+      if (!isSplash) ripple.style.borderWidth = `${1 + Math.random() * 2}px`;
+
+      rippleContainer.appendChild(ripple);
+      ripplesContainer.appendChild(rippleContainer);
+
+      setTimeout(() => rippleContainer.remove(), isSplash ? 1000 : 2500);
+    }
+
+    document.addEventListener('mousemove', (e) => {
+      if (e.clientX !== lastX || e.clientY !== lastY) {
+        createRipple(e.clientX, e.clientY);
+        lastX = e.clientX;
+        lastY = e.clientY;
+        stillSince = Date.now();
+        hasSplashed = false;
+      }
+    });
+
+    // Initial user interaction resumes audio context
+    document.addEventListener('click', () => {
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    });
+
+    // Splash if still for 3 seconds
+    setInterval(() => {
+      if (!hasSplashed && stillSince && Date.now() - stillSince > 2000) {
+        if (lastX !== -1 && lastY !== -1) {
+          createRipple(lastX, lastY, true);
+          
+          // Resume audio context if needed and play splash sound
+          if (audioContext.state === 'suspended') {
+            audioContext.resume().then(() => {
+              playSplashSound();
+            });
+          } else {
+            playSplashSound();
+          }
+          
+          hasSplashed = true;
+        }
+      }
+    }, 250);
+
+    // Force first interaction to initialize audio
+    window.addEventListener('load', () => {
+      const instructions = document.createElement('div');
+      instructions.id = 'instructions';
+      instructions.innerHTML = 'Click anywhere to enable audio';
+      document.body.appendChild(instructions);
+      
+      // Remove instructions after first click
+      document.addEventListener('click', () => {
+        instructions.remove();
+      }, { once: true });
+    });
+  </script>
+</body>
+</html>
