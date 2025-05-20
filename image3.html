@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black & White Theme Converter</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        .white-theme {
+            background-color: #ffffff;
+            color: #000000;
+        }
+
+        .black-theme {
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        .theme-toggle {
+            padding: 10px 20px;
+            font-family: monospace;
+            font-size: 1rem;
+            background-color: #ffffff;
+            color: #000000;
+            border: 2px solid #000000;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .black-theme .theme-toggle {
+            background-color: #000000;
+            color: #ffffff;
+            border-color: #ffffff;
+        }
+
+        /* Back Button Styles - Similar to abc.html but adapting to current theme */
+        #backButton {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 8px 15px;
+            font-family: monospace;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 100;
+            border-radius: 5px;
+            border: 1.2px solid rgba(30, 30, 30, 0.8);
+            background-color: rgba(30, 30, 30, 0.8);
+            color: white;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        #backButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Additional theme-specific styling for the back button */
+        .black-theme #backButton {
+            border: 1.2px solid rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 0.8);
+            color: black;
+        }
+    </style>
+</head>
+<body class="white-theme">
+    <!-- Added Back Button -->
+    <a id="backButton" href="index.html">Back</a>
+    
+    <div class="container">
+        <h1 id="theme-text">Is this Black?</h1>
+        <button id="theme-toggle" class="theme-toggle">Sure?</button>
+    </div>
+
+    <script>
+        document.getElementById('theme-toggle').addEventListener('click', function() {
+            const body = document.body;
+            const themeText = document.getElementById('theme-text');
+            
+            if (body.classList.contains('white-theme')) {
+                body.classList.remove('white-theme');
+                body.classList.add('black-theme');
+                themeText.textContent = "Is this White?";
+            } else {
+                body.classList.remove('black-theme');
+                body.classList.add('white-theme');
+                themeText.textContent = "Is this Black?";
+            }
+        });
+    </script>
+</body>
+</html>
