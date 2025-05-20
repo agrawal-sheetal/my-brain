@@ -110,22 +110,25 @@
       z-index: 5;
     }
 
-    /* Updated overlay image link style */
+    /* Updated overlay link style to make it properly clickable */
     .overlay-link {
       position: absolute;
-      z-index: 5;
+      z-index: 10;
       cursor: pointer;
+      width: auto;
+      height: auto;
+      display: block;
     }
 
+    /* Fixed overlay image styling */
     .overlay-image {
-      position: absolute;
-      transform: translate(-50%, -50%) scale(0);
-      transform-origin: center center;
+      position: relative; /* Changed from absolute */
       transition: transform 0.2s ease-out;
       max-width: 12vw;
       object-fit: contain;
       cursor: pointer;
-      pointer-events: auto;
+      transform: scale(0); /* Initial state */
+      display: block;
     }
 
     /* Specific style for image 6 if needed */
@@ -155,21 +158,12 @@
       right: 5vw;
     }
     
-    .bottom-edge-icon.hover-shake:hover {
-      animation: shake-bottom;
+    .bottom-edge-icon:hover {
       transform: scale(1.5);
+      transition: transform 0.2s ease;
     }
 
     @keyframes shake {
-      0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
-      25% { transform: translate(-50%, -50%) scale(1) rotate(3deg); }
-      50% { transform: translate(-50%, -50%) scale(1) rotate(-3deg); }
-      75% { transform: translate(-50%, -50%) scale(1) rotate(2deg); }
-      100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
-    }
-    
-    /* New animation for bottom icons */
-    @keyframes shake-bottom {
       0% { transform: scale(1) rotate(0deg); }
       25% { transform: scale(1) rotate(3deg); }
       50% { transform: scale(1) rotate(-3deg); }
@@ -185,23 +179,22 @@
 
   <section class="rotation-section">
     <div class="overlay-image-container">
-      <!-- Modified image links with proper href attributes -->
+      <!-- Fixed image links -->
       <a href="image1.html" class="overlay-link" style="left: 30%; top: 32%;">
-        <img src="3.png" class="overlay-image hover-shake" style="max-width: 16vw;" />
+        <img src="3.png" class="overlay-image hover-shake" style="max-width: 16vw;" alt="Image 1" />
       </a>
       <a href="image2.html" class="overlay-link" style="left: 53%; top: 20%;">
-        <img src="4.png" class="overlay-image hover-shake" style="max-width: 18vw;" />
+        <img src="4.png" class="overlay-image hover-shake" style="max-width: 18vw;" alt="Image 2" />
       </a>
       <a href="image3.html" class="overlay-link" style="left: 65%; top: 32%;">
-        <img src="5.png" class="overlay-image hover-shake" style="max-width: 15vw;" />
+        <img src="5.png" class="overlay-image hover-shake" style="max-width: 15vw;" alt="Image 3" />
       </a>
-    
     </div>
 
     <img src="1.png" alt="Background" class="base-image">
     <img src="2.png" alt="Rotate Me" class="rotating-image">
     
-    <!-- Added bottom edge icons with links -->
+    <!-- Bottom edge icons with links -->
     <a href="mailto:sagrawal@risd.edu">
       <img src="email.png" alt="Email" class="bottom-edge-icon left hover-shake">
     </a>
@@ -247,9 +240,9 @@
 
       rotImg.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
 
-      // Apply scale to overlay images but keep them clickable when visible
+      // Apply scale to overlay images with fixed transformation approach
       overlayImages.forEach(img => {
-        img.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        img.style.transform = `scale(${scale})`;
       });
     });
   </script>
