@@ -89,7 +89,7 @@
 
     .rotating-image {
       position: fixed;
-      top: 35%;
+      top: 33.5%;
       left: 50%;
       transform: translate(-50%, -50%) rotate(0deg);
       transform-origin: right center;
@@ -110,30 +110,27 @@
       z-index: 5;
     }
 
-    /* Updated overlay link style to make it properly clickable */
+    /* Updated overlay image link style */
     .overlay-link {
       position: absolute;
-      z-index: 10;
+      z-index: 5;
       cursor: pointer;
-      width: auto;
-      height: auto;
-      display: block;
     }
 
-    /* Fixed overlay image styling */
     .overlay-image {
-      position: relative; /* Changed from absolute */
+      position: absolute;
+      transform: translate(-50%, -50%) scale(0);
+      transform-origin: center center;
       transition: transform 0.2s ease-out;
       max-width: 12vw;
       object-fit: contain;
       cursor: pointer;
-      transform: scale(0); /* Initial state */
-      display: block;
+      pointer-events: auto;
     }
 
     /* Specific style for image 6 if needed */
-    .overlay-image[src*="6.png"] {
-      z-index: 5;
+    .overlay-image[src*="4.png"] {
+      z-index: 10;
     }
 
     .overlay-image.hover-shake:hover {
@@ -158,12 +155,21 @@
       right: 5vw;
     }
     
-    .bottom-edge-icon:hover {
+    .bottom-edge-icon.hover-shake:hover {
+      animation: shake-bottom;
       transform: scale(1.5);
-      transition: transform 0.2s ease;
     }
 
     @keyframes shake {
+      0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+      25% { transform: translate(-50%, -50%) scale(1) rotate(3deg); }
+      50% { transform: translate(-50%, -50%) scale(1) rotate(-3deg); }
+      75% { transform: translate(-50%, -50%) scale(1) rotate(2deg); }
+      100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    }
+    
+    /* New animation for bottom icons */
+    @keyframes shake-bottom {
       0% { transform: scale(1) rotate(0deg); }
       25% { transform: scale(1) rotate(3deg); }
       50% { transform: scale(1) rotate(-3deg); }
@@ -179,22 +185,23 @@
 
   <section class="rotation-section">
     <div class="overlay-image-container">
-      <!-- Fixed image links -->
+      <!-- Modified image links with proper href attributes -->
       <a href="image1.html" class="overlay-link" style="left: 30%; top: 32%;">
-        <img src="3.png" class="overlay-image hover-shake" style="max-width: 16vw;" alt="Image 1" />
+        <img src="3.png" class="overlay-image hover-shake" style="max-width: 16vw;" />
       </a>
-      <a href="image2.html" class="overlay-link" style="left: 53%; top: 20%;">
-        <img src="4.png" class="overlay-image hover-shake" style="max-width: 18vw;" alt="Image 2" />
+      <a href="image2.html" class="overlay-link" style="left: 53%; top: 20%; z-index: 10; position: relative;">
+        <img src="4.png" class="overlay-image hover-shake" style="max-width: 18vw; z-index: 10;" />
       </a>
       <a href="image3.html" class="overlay-link" style="left: 65%; top: 32%;">
-        <img src="5.png" class="overlay-image hover-shake" style="max-width: 15vw;" alt="Image 3" />
+        <img src="5.png" class="overlay-image hover-shake" style="max-width: 15vw;" />
       </a>
+    
     </div>
 
     <img src="1.png" alt="Background" class="base-image">
     <img src="2.png" alt="Rotate Me" class="rotating-image">
     
-    <!-- Bottom edge icons with links -->
+    <!-- Added bottom edge icons with links -->
     <a href="mailto:sagrawal@risd.edu">
       <img src="email.png" alt="Email" class="bottom-edge-icon left hover-shake">
     </a>
@@ -240,9 +247,9 @@
 
       rotImg.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
 
-      // Apply scale to overlay images with fixed transformation approach
+      // Apply scale to overlay images but keep them clickable when visible
       overlayImages.forEach(img => {
-        img.style.transform = `scale(${scale})`;
+        img.style.transform = `translate(-50%, -50%) scale(${scale})`;
       });
     });
   </script>
